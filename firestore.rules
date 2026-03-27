@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "jdaailias@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if (isOwner(userId) && 
+        // Prevent self-escalation of attempts or roles
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin())
+      ) || isAdmin();
+    }
+
+    // Rockstar accounts pool
+    match /accounts/{accountId} {
+      allow read: if true; // Allow public to see stock
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Account details (sensitive)
+    match /account_details/{accountId} {
+      allow read: if isAuthenticated() && (
+        // Only the winner can read the details
+        get(/databases/$(database)/documents/accounts/$(accountId)).data.claimedBy == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if isAdmin();
+    }
+
+    // Recharge codes
+    match /recharges/{rechargeId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+  }
+}

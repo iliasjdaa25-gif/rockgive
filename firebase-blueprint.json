@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user information and game progress.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "attempts": { "type": "integer", "description": "Number of remaining game attempts." },
+        "wonAccounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string" },
+              "password": { "type": "string" },
+              "wonAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "rechargeHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "status": { "type": "string", "enum": ["pending", "used", "invalid"] },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "required": ["uid", "email", "attempts"]
+    },
+    "Account": {
+      "title": "Rockstar Account",
+      "description": "Available Rockstar accounts for the giveaway.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "password": { "type": "string" },
+        "isClaimed": { "type": "boolean" },
+        "claimedBy": { "type": "string", "description": "UID of the user who won this account." }
+      },
+      "required": ["email", "password", "isClaimed"]
+    },
+    "Recharge": {
+      "title": "Orange Recharge",
+      "description": "Submitted Orange recharge codes for verification.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "userId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "used", "invalid"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "userId", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and progress."
+    },
+    "/accounts/{accountId}": {
+      "schema": "Account",
+      "description": "Pool of Rockstar accounts."
+    },
+    "/recharges/{rechargeId}": {
+      "schema": "Recharge",
+      "description": "Submitted recharge codes."
+    }
+  }
+}
